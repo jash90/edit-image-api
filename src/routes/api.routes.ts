@@ -5,7 +5,6 @@ import * as fs from 'fs/promises';
 import fileUpload from 'express-fileupload';
 import { config } from '../config';
 import { ImageService } from '../services/image.service';
-
 const router = express.Router();
 const imageService = ImageService.getInstance();
 
