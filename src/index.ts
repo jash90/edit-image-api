@@ -31,13 +31,62 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Create upload and output directories if they don't exist
 const UPLOAD_DIR = path.join(__dirname, 'uploads');
 const OUTPUT_DIR = path.join(__dirname, 'output');
+const TEMP_DIR = '/tmp';
 
-async function ensureDirectoriesExist() {
-    await fs.mkdir(UPLOAD_DIR, { recursive: true });
-    await fs.mkdir(OUTPUT_DIR, { recursive: true });
+/**
+ * Cleanup old files from a directory
+ * @param directory Directory to clean
+ * @param maxAge Maximum age in milliseconds
+ */
+async function cleanupDirectory(directory: string, maxAge: number) {
+    try {
+        const files = await fs.readdir(directory);
+        const now = Date.now();
+
+        for (const file of files) {
+            const filePath = path.join(directory, file);
+            try {
+                const stats = await fs.stat(filePath);
+                if (now - stats.mtimeMs > maxAge) {
+                    await fs.unlink(filePath);
+                    console.log(`Cleaned up old file: ${filePath}`);
+                }
+            } catch (error) {
+                console.error(`Error processing file ${filePath}:`, error);
+            }
+        }
+    } catch (error) {
+        console.error(`Error cleaning directory ${directory}:`, error);
+    }
 }
 
-ensureDirectoriesExist().catch(console.error);
+/**
+ * Run cleanup on all directories
+ */
+async function runCleanup() {
+    const ONE_DAY = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    await cleanupDirectory(UPLOAD_DIR, ONE_DAY);
+    await cleanupDirectory(OUTPUT_DIR, ONE_DAY);
+    await cleanupDirectory(TEMP_DIR, ONE_DAY);
+}
+
+// Initialize directories and cleanup schedule
+async function initialize() {
+    // Create directories if they don't exist
+    await fs.mkdir(UPLOAD_DIR, { recursive: true });
+    await fs.mkdir(OUTPUT_DIR, { recursive: true });
+
+    // Run initial cleanup
+    await runCleanup();
+
+    // Schedule cleanup every hour
+    setInterval(runCleanup, 60 * 60 * 1000);
+}
+
+// Start initialization
+initialize().catch(error => {
+    console.error('Initialization error:', error);
+});
 
 /**
  * Upscales an image using AI model
@@ -312,4 +361,7 @@ app.listen(PORT, () => {
     console.log(`- GET  /api/health - Health check`);
     console.log(`- POST /api/process-image - Process a single image`);
     console.log(`- POST /api/batch-process - Process multiple images`);
+    console.log(`\nFile cleanup:`);
+    console.log(`- Uploaded and processed files are automatically deleted after 24 hours`);
+    console.log(`- Cleanup runs every hour`);
 });
