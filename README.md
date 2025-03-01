@@ -1,20 +1,33 @@
-# Background Removal and Upscaling API
+# AI Image Processing API
 
-This API provides endpoints for removing backgrounds from images and optionally upscaling them using AI models.
+A powerful Node.js API for image processing using AI models. This service provides background removal and image upscaling capabilities, with support for both single and batch processing.
 
-## Features
+## 🌟 Features
 
-- Remove backgrounds from images using the `@imgly/background-removal-node` library
-- Upscale images using the ESRGAN 4x AI model
-- Support for both single image and batch processing
-- Automatic conversion of JPEG/JPG to PNG format
-- Clean temporary files after processing
+- **Background Removal**: Remove backgrounds from images using AI
+- **Image Upscaling**: Enhance image resolution using ESRGAN 4x AI model
+- **Combined Processing**: Remove background and upscale in one go
+- **Batch Processing**: Process multiple images simultaneously
+- **Format Support**: Automatic JPEG/JPG to PNG conversion
+- **Auto Cleanup**: Automatic cleanup of temporary files after 24 hours
 
-## Installation
+## 🚀 Getting Started
 
-1. Clone the repository
+### Prerequisites
+
+- Node.js 16.x or higher
+- npm or yarn
+- At least 4GB RAM (recommended for AI processing)
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone [your-repo-url]
+cd [your-repo-name]
+```
+
 2. Install dependencies:
-
 ```bash
 npm install
 # or
@@ -22,7 +35,6 @@ yarn install
 ```
 
 3. Build the project:
-
 ```bash
 npm run build
 # or
@@ -30,27 +42,23 @@ yarn build
 ```
 
 4. Start the server:
-
 ```bash
 npm start
 # or
 yarn start
 ```
 
-The server will start on port 3000 by default. You can change this by setting the `PORT` environment variable.
+The server will start on port 3001 by default. You can change this by setting the `PORT` environment variable.
 
-## API Endpoints
+## 📡 API Endpoints
 
 ### Health Check
-
-```
+```http
 GET /api/health
 ```
+Check if the API is running.
 
-Returns a simple status message to check if the API is running.
-
-**Response:**
-
+#### Response
 ```json
 {
   "status": "ok"
@@ -58,42 +66,36 @@ Returns a simple status message to check if the API is running.
 ```
 
 ### Process Single Image
-
-```
+```http
 POST /api/process-image
 ```
+Process a single image with background removal and/or upscaling.
 
-Processes a single image by removing its background and optionally upscaling it.
-
-**Request:**
-
+#### Request
 - Content-Type: `multipart/form-data`
-- Body:
-  - `image`: The image file to process (JPG or PNG)
-  - `upscale`: Set to "true" to upscale the image (optional)
+- Body Parameters:
+  - `image`: Image file (JPG or PNG)
+  - `removeBackground`: Set to "true" to remove background
+  - `upscale`: Set to "true" to upscale the image
 
-**Response:**
-
+#### Response
 - Content-Type: `image/png`
-- Body: The processed image as a PNG file
+- Body: Processed image as PNG file
 
 ### Batch Process Images
-
-```
+```http
 POST /api/batch-process
 ```
+Process multiple images simultaneously.
 
-Processes multiple images by removing their backgrounds and optionally upscaling them.
-
-**Request:**
-
+#### Request
 - Content-Type: `multipart/form-data`
-- Body:
-  - `images`: The image files to process (JPG or PNG)
-  - `upscale`: Set to "true" to upscale the images (optional)
+- Body Parameters:
+  - `images`: Multiple image files (JPG or PNG)
+  - `removeBackground`: Set to "true" to remove background
+  - `upscale`: Set to "true" to upscale images
 
-**Response:**
-
+#### Response
 ```json
 {
   "results": [
@@ -105,74 +107,107 @@ Processes multiple images by removing their backgrounds and optionally upscaling
     {
       "filename": "image2.jpg",
       "success": false,
-      "error": "Failed to process image"
+      "error": "Error message"
     }
   ]
 }
 ```
 
-## Example Usage
+## 💻 Usage Examples
 
-### Using cURL
+### cURL
 
 ```bash
-# Process a single image
-curl -X POST -F "image=@path/to/image.jpg" -F "upscale=true" http://localhost:3000/api/process-image --output processed.png
+# Process single image (remove background)
+curl -X POST \
+  -F "image=@/path/to/image.jpg" \
+  -F "removeBackground=true" \
+  http://localhost:3001/api/process-image \
+  --output processed.png
+
+# Process single image (remove background and upscale)
+curl -X POST \
+  -F "image=@/path/to/image.jpg" \
+  -F "removeBackground=true" \
+  -F "upscale=true" \
+  http://localhost:3001/api/process-image \
+  --output processed.png
 
 # Batch process multiple images
-curl -X POST -F "images=@path/to/image1.jpg" -F "images=@path/to/image2.jpg" -F "upscale=true" http://localhost:3000/api/batch-process
+curl -X POST \
+  -F "images=@/path/to/image1.jpg" \
+  -F "images=@/path/to/image2.jpg" \
+  -F "removeBackground=true" \
+  -F "upscale=true" \
+  http://localhost:3001/api/batch-process
 ```
 
-### Using JavaScript Fetch API
+### JavaScript
 
 ```javascript
-// Process a single image
-const formData = new FormData();
-formData.append('image', imageFile);
-formData.append('upscale', 'true');
+// Single image processing
+async function processImage(imageFile) {
+  const formData = new FormData();
+  formData.append('image', imageFile);
+  formData.append('removeBackground', 'true');
+  formData.append('upscale', 'true');
 
-fetch('http://localhost:3000/api/process-image', {
-  method: 'POST',
-  body: formData
-})
-.then(response => response.blob())
-.then(blob => {
-  const url = URL.createObjectURL(blob);
-  // Use the processed image URL
-});
-
-// Batch process multiple images
-const batchFormData = new FormData();
-imageFiles.forEach(file => {
-  batchFormData.append('images', file);
-});
-batchFormData.append('upscale', 'true');
-
-fetch('http://localhost:3000/api/batch-process', {
-  method: 'POST',
-  body: batchFormData
-})
-.then(response => response.json())
-.then(data => {
-  // Process the results
-  data.results.forEach(result => {
-    if (result.success) {
-      // Use result.data (base64 image)
-    } else {
-      // Handle error: result.error
-    }
+  const response = await fetch('http://localhost:3001/api/process-image', {
+    method: 'POST',
+    body: formData
   });
-});
+
+  if (!response.ok) throw new Error('Processing failed');
+  return await response.blob();
+}
+
+// Batch processing
+async function processBatch(imageFiles) {
+  const formData = new FormData();
+  imageFiles.forEach(file => {
+    formData.append('images', file);
+  });
+  formData.append('removeBackground', 'true');
+  formData.append('upscale', 'true');
+
+  const response = await fetch('http://localhost:3001/api/batch-process', {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) throw new Error('Batch processing failed');
+  return await response.json();
+}
 ```
 
-## Dependencies
+## 🛠 Technical Details
 
-- Express.js - Web server framework
-- TensorFlow.js - Machine learning framework
-- Sharp - Image processing library
-- @imgly/background-removal-node - Background removal library
-- Upscaler - Image upscaling library with ESRGAN model
+### File Cleanup
+- Uploaded and processed files are automatically deleted after 24 hours
+- Cleanup service runs every hour
+- Temporary files are stored in:
+  - Upload directory: `./uploads`
+  - Output directory: `./output`
+  - Temp directory: `/tmp`
 
-## License
+### File Size Limits
+- Maximum file size: 50MB per image
+- Supported formats: JPG, JPEG, PNG
 
-ISC 
+## 📚 Dependencies
+
+- **Express.js**: Web server framework
+- **TensorFlow.js**: Machine learning framework for image processing
+- **Sharp**: High-performance image processing
+- **@imgly/background-removal-node**: AI-powered background removal
+- **upscaler**: Image upscaling with ESRGAN model
+- **express-fileupload**: File upload middleware
+- **cors**: Cross-origin resource sharing support
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is licensed under the ISC License. 
